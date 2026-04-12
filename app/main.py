@@ -1,12 +1,13 @@
 from fastapi import FastAPI, Depends
 from pydantic import BaseModel, Field
-from db.database import engine, get_db
-from db import models
+from app.db.database import engine, get_db
+from app.db import models
 from sqlalchemy.orm import Session
 from typing import Optional
 from app.core.session import get_session_id
 from contextlib import asynccontextmanager
-from api import chat
+from app.api import routes as chat
+
 
 models.Base.metadata.create_all(bind=engine) # create all tables
 
