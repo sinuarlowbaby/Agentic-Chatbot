@@ -11,6 +11,3 @@ def llm_client(user_input: str):
     response = llm.invoke(user_input)
     print(response.content)
     return response.content
-
-if __name__ == "__main__":
-    llm_client("Hello, how are you?")
