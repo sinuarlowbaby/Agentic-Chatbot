@@ -7,11 +7,11 @@ class AgentState(TypedDict):
     messages: List[Dict[str, str]]
     steps: List[Dict[str, Any]]
     tools: List[Dict[str, Any]]
-    current_step: int
-    max_steps: int
-    completed: bool
-    error: str
-    final_response: str
+    current_step: int = 0
+    max_steps: int = 5
+    completed: bool = False
+    error: str = ""
+    final_response: str = ""
     
 
     

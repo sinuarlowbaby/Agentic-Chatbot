@@ -44,6 +44,14 @@ def web_search_tool(query: str) -> str:
     results = tavily.invoke(query)
     return results
 
+def search_tool(query: str):
+    return ["https://example.com/article1", "https://example.com/article2"]
+
+def scrape_tool(urls):
+    return "Sample scraped content from articles"
+
+def summarize_tool(content: str):
+    return f"Summary: {content[:100]}"
 
 if __name__ == "__main__":
     # To test a Tool object in LangChain, use .invoke()
