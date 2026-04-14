@@ -1,23 +1,30 @@
-from typing import TypedDict, List, Dict, Any
 from app.agents.state import AgentState
 from app.tools.tools import web_search_tool
-from app.core.llm_client import llm_client
 
-def executor_node(state):
-    step_num = state["current_step"]
 
-    # Simple logic (you can upgrade later with LLM tool selection)
-    query = state["goal"]
+def executor_node(state: AgentState) -> AgentState:
+    plan_steps = state.get("plan_steps", [])
+    current_step = state.get("current_step", 0)
 
-    results = search_tool(query)
-    content = scrape_tool(results)
-    summary = summarize_tool(content)
+    # Pick the current plan step; fall back to the raw goal
+    if plan_steps and current_step < len(plan_steps):
+        step_def = plan_steps[current_step]
+        query = step_def.get("query", state["goal"])
+    else:
+        query = state["goal"]
 
-    state["steps"].append({
-        "type": "execution",
-        "output": summary
-    })
+    try:
+        result = web_search_tool.invoke(query)
+        output = str(result)
+    except Exception as e:
+        return {
+            **state,
+            "error": f"Tool execution failed: {e}",
+            "done": True,
+        }
 
-    state["intermediate_result"] = summary
-
-    return state
+    return {
+        **state,
+        "steps": state["steps"] + [{"type": "execution", "step": current_step, "output": output}],
+        "intermediate_result": output,
+    }
