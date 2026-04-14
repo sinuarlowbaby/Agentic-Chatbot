@@ -1,27 +1,49 @@
-from fastapi import APIRouter, Depends
+import uuid
+from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel, Field
 from app.db.database import get_db
 from sqlalchemy.orm import Session
-from app.core.session import get_session_id
-from app.db import models
-import uuid
-from app.core.llm_client import llm_client
+from app.core.session import get_user_id
+from app.agents.graph import build_graph
+
 
 router = APIRouter(prefix="/api/v1/chat", tags=["chat"])
 
+graph = build_graph()
+
+
 class ChatRequest(BaseModel):
-    message: str = Field(..., min_length=3, max_length=255, description="Message to be sent to the chatbot")
-
-@router.post("/chat")
-def chat(request: ChatRequest, db: Session = Depends(get_db),session_id: str = Depends(get_session_id)):
-    # db.add(models.Message(content=request.message, role="user", conversation_id=str(uuid.uuid4())))
-    # db.add(models.Conversation(user_id=session_id, title=request.message))
-    # db.add(models.AgentRun(conversation_id=str(uuid.uuid4()), message_id=str(uuid.uuid4()), status="completed", result=request.message))
-    # db.add(models.ToolCall(run_id=str(uuid.uuid4()), tool_name="tool1", tool_input={"input": request.message}, tool_output=request.message, step_type="tool"))
-    # db.commit()
-    response = llm_client(user_input=request.message)
-    print(response)
+    message: str = Field(..., min_length=3, max_length=255, description="Message to send to the agent")
 
 
+@router.post("/")
+async def chat(body: ChatRequest, user_id: str = Depends(get_user_id)):
+    initial_state = {
+        "user_id": user_id,
+        "conversation_id": str(uuid.uuid4()),
+        "goal": body.message,
+        "messages": [],
+        "steps": [],
+        "tools": [],
+        "current_step": 0,
+        "max_steps": 3,
+        "done": False,
+        "error": "",
+        "final_response": "",
+        "intermediate_result": "",
+        "plan_steps": [],
+    }
 
-    return {"message": response}
+    try:
+        result = graph.invoke(initial_state)
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Agent execution failed: {e}")
+
+    if result.get("error"):
+        raise HTTPException(status_code=500, detail=result["error"])
+
+    return {
+        "response": result.get("final_response") or result.get("intermediate_result", "No result"),
+        "conversation_id": result.get("conversation_id"),
+        "steps_taken": result.get("current_step", 0),
+    }

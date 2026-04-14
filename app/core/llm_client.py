@@ -9,5 +9,4 @@ def llm_client(user_input: str):
         groq_api_key=os.getenv("GROQ_API_KEY"))
 
     response = llm.invoke(user_input)
-    print(response.content)
     return response.content
