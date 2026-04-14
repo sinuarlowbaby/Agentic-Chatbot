@@ -61,10 +61,8 @@ def analyze_data_tool(query: str,intermediate_result: str = "") -> dict:
         """
     )
 
-    final_prompt = prompt.format(query=query,intermediate_result=intermediate_result,analysis_type="general")
-
     chain = prompt | llm | PydanticOutputParser(AnalyzeDataInput)
-    response = chain.invoke(final_prompt)
+    response = chain.invoke({"query":query,"intermediate_result":intermediate_result,"analysis_type":"general"})
     try:
         parsed_response = PydanticOutputParser(AnalyzeDataInput).parse(response)
         return parsed_response.dict()

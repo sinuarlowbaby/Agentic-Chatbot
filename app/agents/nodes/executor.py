@@ -23,7 +23,7 @@ def executor_node(state: AgentState) -> AgentState:
     }
     try:
         if action in TOOLS:
-            result = TOOLS[action].invoke(query,intermediate_result)
+            result = TOOLS[action].invoke({"query":query,"intermediate_result":intermediate_result})
         else:
             result = "Unknown action"
         output = result if isinstance(result, (dict, list)) else str(result)
