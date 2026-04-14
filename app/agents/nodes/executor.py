@@ -12,20 +12,21 @@ def executor_node(state: AgentState) -> AgentState:
         step_def = plan_steps[current_step]
         action = step_def.get("plan_step", "web_search")
         query = step_def.get("query", state["goal"])
+        intermediate_result = step_def.get("intermediate_result", "")
     else:
         action = "web_search"
         query = state["goal"]
-
+    TOOLS = {
+        "web_search": web_search_tool,
+        "analyze_data": analyze_data_tool,
+        "summarize_data": summarize_data_tool,
+    }
     try:
-        if action == "web_search":
-            result = web_search_tool.invoke(query)
-        elif action == "analyze_data":
-            result = analyze_data_tool.invoke(query)
-        elif action == "summarize_data":
-            result = summarize_data_tool.invoke(query)
+        if action in TOOLS:
+            result = TOOLS[action].invoke({"query":query,"intermediate_result":intermediate_result})
         else:
             result = "Unknown action"
-        output = result.content
+        output = result if isinstance(result, (dict, list)) else str(result)
 
     except Exception as e:
         return {
@@ -42,7 +43,11 @@ def executor_node(state: AgentState) -> AgentState:
             "action": action, 
             "query": query, 
             "output": output}],
-        "intermediate_result": output,
-        "done": current_step >= len(plan_steps) - 1,
+        "intermediate_result": state["intermediate_result"] + "\n" + output,
+        "done": (
+            current_step >= len(plan_steps) - 1
+            or "error" in str(output).lower()
+            or len(str(output)) < 20
+        ),
         "current_step": current_step + 1,
     }
