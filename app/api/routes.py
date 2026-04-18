@@ -40,7 +40,11 @@ async def chat(body: ChatRequest, user_id: str = Depends(get_session_id)):
         raise HTTPException(status_code=500, detail=f"Agent execution failed: {e}")
 
     if result.get("error"):
-        raise HTTPException(status_code=500, detail=result["error"])
+        return {
+            "response": f"Agent encountered an issue: {result['error']}",
+            "conversation_id": result.get("conversation_id"),
+            "steps_taken": result.get("current_step", 0),
+        }
 
     return {
         "response": result.get("final_response") or result.get("intermediate_result", "No result"),
