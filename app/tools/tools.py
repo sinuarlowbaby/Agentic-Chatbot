@@ -39,14 +39,14 @@ def web_search_tool(query: str) -> str:
     """Search the web for up-to-date information about a given query."""
     tavily = _get_tavily()
     results = tavily.invoke(query)
-    return results
+    return str(results)
 
 @tool
-def analyze_data_tool(query: str,intermediate_result: str = "") -> dict:
+def analyze_data_tool(query: str, intermediate_result: str = "") -> dict:
     """Analyze the data for a given query."""
-    parser = PydanticOutputParser(AnalyzeDataInput)
+    parser = PydanticOutputParser(pydantic_object=AnalyzeDataInput)
     prompt = PromptTemplate(
-        input_variables=["query", "intermediate_result", "analysis_type", "format_instructions"],
+        input_variables=["query", "intermediate_result", "analysis_type"],
         partial_variables={
             "format_instructions": parser.get_format_instructions()
         },
@@ -57,28 +57,29 @@ def analyze_data_tool(query: str,intermediate_result: str = "") -> dict:
         previous intermediate result : {intermediate_result}
         analysis_type : {analysis_type}
         Respond ONLY with valid JSON in this format:
-        format : {format_instructions}
+        {format_instructions}
         """
     )
 
-    chain = prompt | llm | PydanticOutputParser(AnalyzeDataInput)
-    response = chain.invoke({"query":query,"intermediate_result":intermediate_result,"analysis_type":"general"})
     try:
-        parsed_response = PydanticOutputParser(AnalyzeDataInput).parse(response)
-        return parsed_response.dict()
-
+        chain = prompt | llm | parser
+        response = chain.invoke({
+            "query": query,
+            "intermediate_result": intermediate_result,
+            "analysis_type": "general",
+        })
+        return response.model_dump()
     except Exception as e:
         return {
-            "error": f"Failed to parse analyze data: {str(e)}",
-            "done": True,
+            "error": f"Failed to analyze data: {str(e)}",
         }
 
 @tool
 def summarize_data_tool(query: str) -> dict:
     """Summarize the data for a given query."""
-    parser = PydanticOutputParser(SummarizeDataInput)
+    parser = PydanticOutputParser(pydantic_object=SummarizeDataInput)
     prompt = PromptTemplate(
-        input_variables=["query", "format_instructions"],
+        input_variables=["query"],
         partial_variables={
             "format_instructions": parser.get_format_instructions()
         },
@@ -87,22 +88,17 @@ def summarize_data_tool(query: str) -> dict:
         Summarize the following data for a given query:
         {query}
         Respond ONLY with valid JSON in this format:
-        format : {format_instructions}
+        {format_instructions}
         """
     )
 
-    final_prompt = prompt.format(query=query)
-
-    chain = prompt | llm | PydanticOutputParser(SummarizeDataInput)
-    response = chain.invoke(final_prompt)
     try:
-        parsed_response = PydanticOutputParser(SummarizeDataInput).parse(response)
-        return parsed_response.dict()
-
+        chain = prompt | llm | parser
+        response = chain.invoke({"query": query})
+        return response.model_dump()
     except Exception as e:
         return {
-            "error": f"Failed to parse summarize data: {str(e)}",
-            "done": True,
+            "error": f"Failed to summarize data: {str(e)}",
         }
 
 if __name__ == "__main__":

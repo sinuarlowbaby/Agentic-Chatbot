@@ -1,6 +1,6 @@
 from fastapi import FastAPI, Depends
 from pydantic import BaseModel, Field
-from app.db.database import engine, get_db
+from  app.db.database import engine, get_db
 from app.db import models
 from sqlalchemy.orm import Session
 from typing import Optional
@@ -31,4 +31,5 @@ def read_root():
 if __name__ == "__main__":
     print("Application startup in http://127.0.0.1:8000")
     import uvicorn
-    uvicorn.run("app.main:app", host="127.0.0.1", port=8000, reload=True)
+    uvicorn.run("main:app", host="127.0.0.1", port=8000, reload=True)
+    print("Application shutdown")

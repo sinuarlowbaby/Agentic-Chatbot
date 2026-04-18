@@ -1,3 +1,5 @@
+from app.agents.state import AgentState
+
 def evaluator_node(state: AgentState) -> AgentState:
     current_step = state.get("current_step", 0)
     max_steps = state.get("max_steps", 5)
@@ -21,6 +23,7 @@ def evaluator_node(state: AgentState) -> AgentState:
 
     # 🔴 2. Max steps → stop
     if current_step >= max_steps - 1:
+        print("➡️final response : ",state.get("intermediate_result", "Max steps reached"))
         return {
             **state,
             "done": True,

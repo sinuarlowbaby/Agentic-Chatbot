@@ -1,7 +1,7 @@
 import json
 from typing import List
 from app.agents.state import AgentState
-from app.core.llm_client import llm_client
+from app.core.llm_client import llm
 from langchain_core.prompts import PromptTemplate
 from langchain_core.output_parsers import PydanticOutputParser
 from pydantic import BaseModel, Field
@@ -16,32 +16,35 @@ class PlanOutput(BaseModel):
 
 def planner_node(state: AgentState) -> AgentState:
     goal = state["goal"]
+    print("\n[PLANNER] Goal:", goal)
 
+    parser = PydanticOutputParser(pydantic_object=PlanOutput)
     prompt = PromptTemplate(
-        input_variables=["goal"],
+        input_variables=["goal", "format_instructions"],
         template="""
-            
-                You are a master planner. Given a user goal, break it into a numbered list of
-                concrete steps.
-                Goal :{goal}
-                instructions :{format_instructions}
-                Respond ONLY with valid JSON in this format:
-                {
-                "plan_steps": [
-                    {"step": int, "plan_step": str, "query": str}
-                ]
-                }
-                No explanation, no markdown — raw JSON only.
-                Example: [{"step":1,"plan_step":"web_search","query":"latest AI news 2026"}]
-            
+            You are a master planner. Given a user goal, break it into a numbered list of
+            concrete steps.
+            You MUST ONLY use the following actions:
+                - web_search
+                - analyze_data
+                - summarize_data
+            Do NOT invent new actions.
+            Goal: {goal}
+            Instructions: {format_instructions}
+            Respond ONLY with valid JSON in this format:
+            {{"plan_steps": [{{"step": 1, "plan_step": "web_search", "query": "example query"}}]}}
+            No explanation, no markdown - raw JSON only.
     """)
-    format_instructions = PydanticOutputParser(PlanOutput).get_format_instructions()
+    format_instructions = parser.get_format_instructions()
     final_prompt = prompt.format(goal=goal, format_instructions=format_instructions)
-    response = llm_client(final_prompt)
+    # print("🛑final_prompt : ",final_prompt)
+    response = llm.invoke(final_prompt).content
     print("🛑response : ",response)
     try:
-        parsed_response = PydanticOutputParser(PlanOutput).parse(response)
-        plan_steps = [step.dict() for step in parsed_response.plan_steps]
+        parsed_response = parser.parse(response)
+        print("🛑parsed_response : ",parsed_response)
+        plan_steps = [step.model_dump() for step in parsed_response.plan_steps]
+        print("🛑plan_steps : ",plan_steps)
     except Exception as e:
         return {
             **state,
