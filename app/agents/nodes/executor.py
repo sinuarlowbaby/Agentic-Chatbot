@@ -59,7 +59,7 @@ def executor_node(state: AgentState) -> AgentState:
             "action": action, 
             "query": query, 
             "output": output}],
-        "intermediate_result": state["intermediate_result"] + "\n" + output,
+        "intermediate_result": state["intermediate_result"] + "\n" + str(output),
         "done": (
             current_step >= len(plan_steps) - 1
             or "error" in str(output).lower()

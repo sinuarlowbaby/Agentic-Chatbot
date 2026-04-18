@@ -23,6 +23,7 @@ def evaluator_node(state: AgentState) -> AgentState:
 
     # 🔴 2. Max steps → stop
     if current_step >= max_steps - 1:
+        print("➡️final response : ",state.get("intermediate_result", "Max steps reached"))
         return {
             **state,
             "done": True,
