@@ -1,5 +1,5 @@
 from langchain.tools import tool
-from langchain_tavily import TavilySearch
+from langchain_community.tools.tavily_search import TavilySearchResults
 from langchain_core.prompts import PromptTemplate
 from langchain_core.output_parsers import PydanticOutputParser
 from app.core.llm_client import llm
@@ -23,11 +23,11 @@ class SummarizeDataInput(BaseModel):
 load_dotenv()
 
 
-def _get_tavily() -> TavilySearch:
+def _get_tavily() -> TavilySearchResults:
     api_key = os.getenv("TAVILY_API_KEY")
     if not api_key:
         raise EnvironmentError("TAVILY_API_KEY is not set in environment variables")
-    return TavilySearch(
+    return TavilySearchResults(
         tavily_api_key=api_key,
         max_results=3,
         include_raw_content=True,

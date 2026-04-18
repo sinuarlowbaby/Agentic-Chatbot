@@ -3,7 +3,7 @@ from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel, Field
 from app.db.database import get_db
 from sqlalchemy.orm import Session
-from app.core.session import get_user_id
+from app.core.session import get_session_id
 from app.agents.graph import build_graph
 
 
@@ -17,7 +17,7 @@ class ChatRequest(BaseModel):
 
 
 @router.post("/")
-async def chat(body: ChatRequest, user_id: str = Depends(get_user_id)):
+async def chat(body: ChatRequest, user_id: str = Depends(get_session_id)):
     initial_state = {
         "user_id": user_id,
         "conversation_id": str(uuid.uuid4()),

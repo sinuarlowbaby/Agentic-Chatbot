@@ -1,3 +1,5 @@
+from app.agents.state import AgentState
+
 def evaluator_node(state: AgentState) -> AgentState:
     current_step = state.get("current_step", 0)
     max_steps = state.get("max_steps", 5)
