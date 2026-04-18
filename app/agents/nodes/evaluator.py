@@ -1,49 +1,56 @@
-from app.agents.state import AgentState
-
-
 def evaluator_node(state: AgentState) -> AgentState:
     current_step = state.get("current_step", 0)
     max_steps = state.get("max_steps", 5)
-    intermediate_result = bool(str(state.get("intermediate_result", "")).strip())
     plan_steps = state.get("plan_steps", [])
+    steps = state.get("steps", [])
 
-    output = state.get("steps", [])[-1].get("final_response", "")
-    has_result = bool(str(output).strip())
-    has_error = bool(str(state.get("error", "")).strip())
+    output = steps[-1].get("output", "") if steps else ""
+    error = state.get("error", "")
 
+    has_error = bool(str(error).strip())
+    has_output = bool(str(output).strip())
 
+    # 🔴 1. Error → stop immediately
     if has_error:
-        # Hard stop — error or step budget exhausted
-        done = True
         return {
             **state,
-            "done": done,
+            "done": True,
+            "final_response": error,
             "current_step": current_step + 1,
-            "final_response": state.get("error") or state.get("intermediate_result", "Agent could not complete the task."),
         }
-    if current_step >= max_steps - 1:
-        # Hard stop — step budget exhausted
-        done = True
-        return {
-            **state,
-            "done": done,
-            "current_step": current_step + 1,
-            "final_response": state.get("intermediate_result", "Agent could not complete the task."),
-        }
-    if current_step < len(plan_steps):
-        # Hard stop — step budget exhausted
-        done = False
-        final_response = state.get("final_response", "")
-    
-    poor_result = len(str(output)) < 30
-    if poor_result and current_step < max_steps - 1:
-        # We have a usable result — mark done and surface it
-        done = True
-        final_response = state.get("intermediate_result", "")
 
+    # 🔴 2. Max steps → stop
+    if current_step >= max_steps - 1:
+        return {
+            **state,
+            "done": True,
+            "final_response": state.get("intermediate_result", "Max steps reached"),
+            "current_step": current_step + 1,
+        }
+
+    # 🟡 3. Continue if plan not finished
+    if current_step < len(plan_steps):
+        return {
+            **state,
+            "done": False,
+            "current_step": current_step + 1,
+        }
+
+    # 🟡 4. Quality check
+    poor_result = len(str(output)) < 30
+
+    if poor_result:
+        return {
+            **state,
+            "done": False,
+            "current_step": current_step + 1,
+            "final_response": "Result too weak, continuing...",
+        }
+
+    # ✅ 5. Success → stop
     return {
         **state,
-        "done": done,
+        "done": True,
+        "final_response": output,
         "current_step": current_step + 1,
-        "final_response": final_response,
     }
