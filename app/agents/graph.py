@@ -22,7 +22,7 @@ def build_graph():
         if state["done"] or state["current_step"] >= state["max_steps"]:
             return END
         # Loop back to planner so a fresh plan can be generated for the next step
-        return "planner"
+        return "executor"
 
     graph.add_conditional_edges("evaluator", should_continue)
 
