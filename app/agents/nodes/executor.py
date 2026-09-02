@@ -17,7 +17,7 @@ def executor_node(state: AgentState) -> AgentState:
         print("🛑action : ",action)
         query = step_def.get("query", state["goal"])
         print("🛑query : ",query)
-        intermediate_result = step_def.get("intermediate_result", "")
+        intermediate_result = state.get("intermediate_result", "")
         print("🛑intermediate_result : ",intermediate_result)
     else:
         action = "web_search"
@@ -41,7 +41,10 @@ def executor_node(state: AgentState) -> AgentState:
                 result = TOOLS[action].invoke({"query": query})
         else:
             result = "Unknown action"
-        output = result if isinstance(result, (dict, list)) else str(result)
+        if isinstance(result, dict) and "results" in result:
+            output = "\n".join([r["content"] for r in result["results"][:3]])
+        else:
+            output = str(result)
 
     except Exception as e:
         print("🛑ERROR : ", repr(e))
@@ -50,20 +53,19 @@ def executor_node(state: AgentState) -> AgentState:
             "error": f"Tool execution failed: {e}",
             "done": True,
         }
+    print("\n===== DATA FLOW =====")
+    print("Prev result:", state.get("intermediate_result"))
+    print("New output:", output)
 
     return {
         **state,
         "steps": state["steps"] + [{
             "type": "execution", 
-            "step": current_step, 
+            "step": current_step + 1, 
             "action": action, 
             "query": query, 
             "output": output}],
-        "intermediate_result": state["intermediate_result"] + "\n" + str(output),
-        "done": (
-            current_step >= len(plan_steps) - 1
-            or "error" in str(output).lower()
-            or len(str(output)) < 20
-        ),
+        "intermediate_result": output,
+        "done": False,
         "current_step": current_step,
     }
