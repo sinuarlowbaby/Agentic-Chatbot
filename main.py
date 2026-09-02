@@ -20,6 +20,7 @@ app.include_router(chat.router)
 @asynccontextmanager
 async def lifespan(app:FastAPI):
     print("Application startup")
+    print("localhost:800")
     yield
     print("Application shutdown")
 
